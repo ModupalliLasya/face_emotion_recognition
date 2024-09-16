@@ -36,23 +36,24 @@ emotion_images = {
 # Function to detect faces and emotions
 def detect_emotion(frame):
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    faces = face_classifier.detectMultiScale(gray)
+    faces = face_classifier.detectMultiScale(gray, scaleFactor=1.3, minNeighbors=5)
 
     detected_emotions = []
     for (x, y, w, h) in faces:
-        cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 255), 2)
         roi_gray = gray[y:y + h, x:x + w]
         roi_gray = cv2.resize(roi_gray, (48, 48), interpolation=cv2.INTER_AREA)
+        roi = roi_gray.astype('float') / 255.0
+        roi = img_to_array(roi)
+        roi = np.expand_dims(roi, axis=0)
 
-        if np.sum([roi_gray]) != 0:
-            roi = roi_gray.astype('float') / 255.0
-            roi = img_to_array(roi)
-            roi = np.expand_dims(roi, axis=0)
-
-            prediction = classifier.predict(roi)[0]
-            label = emotion_labels[prediction.argmax()]
-            detected_emotions.append(label)
-            emotion_count[label] += 1
+        prediction = classifier.predict(roi)[0]
+        label = emotion_labels[prediction.argmax()]
+        detected_emotions.append(label)
+        emotion_count[label] += 1
+    
+    # Draw rectangle around detected faces
+    for (x, y, w, h) in faces:
+        cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 255), 2)
     
     return frame, detected_emotions
 
@@ -85,6 +86,8 @@ def apply_gradient():
         <style>
         body {
             background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+            color: #333;
+            font-family: 'Arial', sans-serif;
         }
         </style>
         """,
@@ -120,7 +123,7 @@ if start_button:
     uploaded_file = st.file_uploader("Upload a photo for emotion detection", type=['jpg', 'jpeg', 'png'])
 
     if uploaded_file is not None:
-        image = np.array(Image.open(uploaded_file))
+        image = np.array(Image.open(uploaded_file).convert('RGB'))  # Convert to RGB
         animate_loading()
         
         frame, detected_emotions = detect_emotion(image)
