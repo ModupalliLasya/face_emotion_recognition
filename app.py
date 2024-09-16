@@ -29,7 +29,7 @@ emotion_images = {
     'Disgust': 'disgust.jpg',
     'Fear': 'fear.jpg',
     'Happy': 'happy.jpg',
-    'Neutral': 'neutral.png',
+    'Neutral': 'neutral.jpg',
     'Sad': 'sad.jpg',
     'Surprise': 'surprise.jpg'
 }
