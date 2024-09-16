@@ -4,7 +4,6 @@ import numpy as np
 from keras.models import load_model
 from keras.preprocessing.image import img_to_array
 from PIL import Image
-import io
 
 # Load the classifier and model
 face_classifier = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
@@ -31,19 +30,20 @@ emotion_images = {
     'Surprise': 'surprise.jpg'
 }
 
+# Function to detect and crop face
 def detect_and_crop_face(frame):
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)  # Convert to gray for face detection
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     faces = face_classifier.detectMultiScale(gray, scaleFactor=1.3, minNeighbors=5)
 
     if len(faces) == 0:
         return None, None
 
-    # Use the first detected face
     (x, y, w, h) = faces[0]
     cropped_face = gray[y:y + h, x:x + w]
     cropped_face = cv2.resize(cropped_face, (48, 48), interpolation=cv2.INTER_AREA)
     return cropped_face, faces[0]
 
+# Function to predict emotion
 def predict_emotion(cropped_face):
     if cropped_face is None:
         return None
@@ -55,35 +55,34 @@ def predict_emotion(cropped_face):
     prediction = classifier.predict(cropped_face)[0]
     return emotion_labels[prediction.argmax()]
 
-def show_emotion_summary(emotion):
-    st.subheader(f"Detected Emotion: {emotion}")
-    st.write(emotion_quotes.get(emotion, "Enjoy the moment!"))
-
-    img_path = emotion_images.get(emotion)
-    if img_path:
-        st.image(img_path, width=300, caption=emotion)
-
 # Streamlit UI
-st.title("Emotion Detection Application")
+st.title("Live Emotion Detection")
 
-# Start capturing video from webcam
-camera = st.camera_input("Capture a photo")
+# Display video feed
+stframe = st.empty()
 
-if camera:
-    # Read the uploaded image from the camera input
-    image = Image.open(camera)
-    frame = np.array(image)  # Convert PIL image to numpy array
+# Start the camera
+cap = cv2.VideoCapture(0)
 
-    # Detect and crop face
-    cropped_face, face_coords = detect_and_crop_face(frame)
+while True:
+    ret, frame = cap.read()
+    if not ret:
+        st.warning("Unable to access the camera.")
+        break
 
-    if cropped_face is not None:
-        # Predict the emotion based on cropped face
-        detected_emotion = predict_emotion(cropped_face)
+    cropped_face, _ = detect_and_crop_face(frame)
+    detected_emotion = predict_emotion(cropped_face)
 
-        if detected_emotion:
-            show_emotion_summary(detected_emotion)
-        else:
-            st.write("Emotion could not be detected.")
-    else:
-        st.write("No face detected in the image.")
+    if detected_emotion:
+        st.write(f"Detected Emotion: {detected_emotion}")
+        st.write(emotion_quotes.get(detected_emotion, "No quote available."))
+
+        img_path = emotion_images.get(detected_emotion)
+        if img_path:
+            st.image(img_path, width=300, caption=detected_emotion)
+
+    # Display the video feed
+    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    stframe.image(frame, channels='RGB', use_column_width=True)
+
+cap.release()
