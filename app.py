@@ -5,6 +5,7 @@ from keras.models import load_model
 from keras.preprocessing.image import img_to_array
 from PIL import Image
 import io
+import os
 
 # Initialize face classifier
 face_classifier = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
@@ -28,7 +29,7 @@ emotion_images = {
     'Disgust': 'disgust.jpg',
     'Fear': 'fear.jpg',
     'Happy': 'happy.jpg',
-    'Neutral': 'neutral.jpg',
+    'Neutral': 'neutral.png',
     'Sad': 'sad.jpg',
     'Surprise': 'surprise.jpg'
 }
@@ -81,8 +82,10 @@ if camera:
         st.write(emotion_quotes.get(detected_emotion, "No quote available."))
 
         img_path = emotion_images.get(detected_emotion)
-        if img_path:
+        if img_path and os.path.exists(img_path):
             st.image(img_path, width=300, caption=detected_emotion)
+        else:
+            st.error("Image for detected emotion not found.")
 
     # Display the image feed
     st.image(frame, channels='BGR', use_column_width=True)
