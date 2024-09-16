@@ -4,6 +4,7 @@ import numpy as np
 from keras.models import load_model
 from keras.preprocessing.image import img_to_array
 from PIL import Image
+import io
 
 # Load the classifier and model
 face_classifier = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
@@ -58,27 +59,30 @@ def predict_emotion(cropped_face):
 # Streamlit UI
 st.title("Live Emotion Detection")
 
-# Start the camera
+# Capture the image from the camera
 camera = st.camera_input("Capture Image")
 
 if camera:
-    # Read the image from the camera
-    frame = camera.image
+    # Convert the uploaded image to OpenCV format
+    image = Image.open(io.BytesIO(camera.read()))
+    frame = np.array(image)
 
-    if frame is not None:
-        frame = np.array(frame)
-        cropped_face, _ = detect_and_crop_face(frame)
-        detected_emotion = predict_emotion(cropped_face)
+    # Convert the RGB frame to BGR for OpenCV processing
+    frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
 
-        if detected_emotion:
-            st.write(f"Detected Emotion: {detected_emotion}")
-            st.write(emotion_quotes.get(detected_emotion, "No quote available."))
+    # Process the image
+    cropped_face, _ = detect_and_crop_face(frame)
+    detected_emotion = predict_emotion(cropped_face)
 
-            img_path = emotion_images.get(detected_emotion)
-            if img_path:
-                st.image(img_path, width=300, caption=detected_emotion)
+    if detected_emotion:
+        st.write(f"Detected Emotion: {detected_emotion}")
+        st.write(emotion_quotes.get(detected_emotion, "No quote available."))
 
-        # Display the video feed
-        st.image(frame, channels='RGB', use_column_width=True)
+        img_path = emotion_images.get(detected_emotion)
+        if img_path:
+            st.image(img_path, width=300, caption=detected_emotion)
+
+    # Display the image feed
+    st.image(frame, channels='BGR', use_column_width=True)
 else:
     st.warning("Camera not available. Please ensure your camera is connected and accessible.")
