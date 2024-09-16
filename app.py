@@ -4,8 +4,8 @@ import numpy as np
 from keras.models import load_model
 from keras.preprocessing.image import img_to_array
 import matplotlib.pyplot as plt
-from collections import Counter
 from PIL import Image
+import time
 
 # Load the classifier and model
 face_classifier = cv2.CascadeClassifier('haarcascade_frontalface_default (2).xml')
@@ -62,7 +62,7 @@ def show_emotion_summary():
     counts = list(emotion_count.values())
 
     fig, ax = plt.subplots()
-    ax.bar(emotions, counts, color='blue')
+    ax.bar(emotions, counts, color=['#FF6384', '#36A2EB', '#FFCE56', '#00CC99', '#FF9999', '#CCCCFF', '#FF6633'])
     ax.set_xlabel('Emotions')
     ax.set_ylabel('Count')
     ax.set_title('Emotion Detection Count')
@@ -78,34 +78,55 @@ def show_emotion_summary():
     if img_path:
         st.image(img_path, width=300, caption=dominant_emotion)
 
-# Streamlit UI
-st.title("Emotion Detection Application")
+# Function for gradient background
+def apply_gradient():
+    st.markdown(
+        """
+        <style>
+        body {
+            background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
 
-# Camera logic
+# Animation function (loading effect)
+def animate_loading():
+    for _ in range(3):
+        with st.empty():
+            st.write("Loading...")
+            time.sleep(0.5)
+        with st.empty():
+            st.write("Processing...")
+            time.sleep(0.5)
+
+# Streamlit UI
+apply_gradient()
+
+st.title("Emotion Detection Application", anchor="left")
+
+# Show starting image
+st.image('face_img.jpg', caption="Welcome! Let's detect your emotion.", use_column_width=True)
+
+# Camera or image logic
 if 'emotion_history' not in st.session_state:
     st.session_state.emotion_history = []
 
-start_button = st.button("Start Camera")
-stop_button = st.button("Stop Camera")
+start_button = st.button("Start Emotion Detection")
+stop_button = st.button("Stop Detection")
 
 if start_button:
-    cap = cv2.VideoCapture(0)
-    frame_window = st.image([])
+    uploaded_file = st.file_uploader("Upload a photo for emotion detection", type=['jpg', 'jpeg', 'png'])
 
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            st.warning("Unable to access the camera.")
-            break
+    if uploaded_file is not None:
+        image = np.array(Image.open(uploaded_file))
+        animate_loading()
         
-        frame, detected_emotions = detect_emotion(frame)
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        frame_window.image(frame)
+        frame, detected_emotions = detect_emotion(image)
+        st.image(frame, caption="Processed Image", use_column_width=True)
         
-        # Append detected emotions to session state
         st.session_state.emotion_history.extend(detected_emotions)
-
-    cap.release()
 
 # Display emotion summary
 if stop_button:
