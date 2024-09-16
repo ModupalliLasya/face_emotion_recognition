@@ -58,31 +58,27 @@ def predict_emotion(cropped_face):
 # Streamlit UI
 st.title("Live Emotion Detection")
 
-# Display video feed
-stframe = st.empty()
-
 # Start the camera
-cap = cv2.VideoCapture(0)
+camera = st.camera_input("Capture Image")
 
-while True:
-    ret, frame = cap.read()
-    if not ret:
-        st.warning("Unable to access the camera.")
-        break
+if camera:
+    # Read the image from the camera
+    frame = camera.image
 
-    cropped_face, _ = detect_and_crop_face(frame)
-    detected_emotion = predict_emotion(cropped_face)
+    if frame is not None:
+        frame = np.array(frame)
+        cropped_face, _ = detect_and_crop_face(frame)
+        detected_emotion = predict_emotion(cropped_face)
 
-    if detected_emotion:
-        st.write(f"Detected Emotion: {detected_emotion}")
-        st.write(emotion_quotes.get(detected_emotion, "No quote available."))
+        if detected_emotion:
+            st.write(f"Detected Emotion: {detected_emotion}")
+            st.write(emotion_quotes.get(detected_emotion, "No quote available."))
 
-        img_path = emotion_images.get(detected_emotion)
-        if img_path:
-            st.image(img_path, width=300, caption=detected_emotion)
+            img_path = emotion_images.get(detected_emotion)
+            if img_path:
+                st.image(img_path, width=300, caption=detected_emotion)
 
-    # Display the video feed
-    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    stframe.image(frame, channels='RGB', use_column_width=True)
-
-cap.release()
+        # Display the video feed
+        st.image(frame, channels='RGB', use_column_width=True)
+else:
+    st.warning("Camera not available. Please ensure your camera is connected and accessible.")
