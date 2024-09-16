@@ -6,6 +6,9 @@ from keras.preprocessing.image import img_to_array
 from PIL import Image
 import io
 
+# Initialize face classifier
+face_classifier = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+
 # Load the classifier and model
 classifier = load_model('model.h5')
 
