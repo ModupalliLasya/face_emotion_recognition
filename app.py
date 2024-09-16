@@ -11,7 +11,12 @@ import os
 face_classifier = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
 # Load the classifier and model
-classifier = load_model('model.h5')
+model_path = 'model.h5'
+if os.path.exists(model_path):
+    classifier = load_model(model_path)
+else:
+    st.error("Model file not found.")
+    classifier = None
 
 emotion_labels = ['Angry', 'Disgust', 'Fear', 'Happy', 'Neutral', 'Sad', 'Surprise']
 emotion_quotes = {
@@ -56,8 +61,11 @@ def predict_emotion(cropped_face):
     cropped_face = img_to_array(cropped_face)
     cropped_face = np.expand_dims(cropped_face, axis=0)
 
-    prediction = classifier.predict(cropped_face)[0]
-    return emotion_labels[prediction.argmax()]
+    if classifier:
+        prediction = classifier.predict(cropped_face)[0]
+        return emotion_labels[prediction.argmax()]
+    else:
+        return None
 
 # Streamlit UI
 st.title("Live Emotion Detection")
